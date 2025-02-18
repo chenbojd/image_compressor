@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片压缩工具</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- 主容器 -->
+    <div class="container">
+        <!-- 头部标题 -->
+        <header class="header">
+            <h1>图片压缩工具</h1>
+            <p class="subtitle">简单高效的图片压缩服务</p>
+        </header>
+
+        <!-- 上传区域 -->
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-content">
+                <img src="upload-icon.svg" alt="上传图标" class="upload-icon">
+                <p>拖拽文件到这里</p>
+                <p class="divider">或</p>
+                <button class="select-button" id="selectButton">选择文件</button>
+                <p class="support-text">支持 JPG、JPEG、PNG 格式</p>
+                <input type="file" id="fileInput" accept=".jpg,.jpeg,.png" hidden>
+            </div>
+        </div>
+
+        <!-- 预览和设置区域 -->
+        <div class="preview-section" id="previewSection" style="display: none;">
+            <!-- 压缩设置 -->
+            <div class="compression-settings">
+                <h3>压缩设置</h3>
+                <div class="slider-container">
+                    <label for="compressionSlider">图片质量</label>
+                    <input type="range" id="compressionSlider" min="1" max="100" value="80">
+                    <span id="compressionValue">80%</span>
+                </div>
+                <p class="quality-hint">数值越高，图片质量越好，文件越大</p>
+                <button id="compressButton" class="primary-button">开始压缩</button>
+            </div>
+
+            <!-- 预览区域 -->
+            <div class="previews-container">
+                <!-- 原始文件预览 -->
+                <div class="preview-box">
+                    <h3>原始文件</h3>
+                    <div class="preview-image-container">
+                        <img id="originalPreview" alt="原始图片预览">
+                    </div>
+                    <div class="file-info">
+                        <p>大小：<span id="originalSize"></span></p>
+                        <p>格式：<span id="fileFormat"></span></p>
+                    </div>
+                </div>
+
+                <!-- 压缩预览 -->
+                <div class="preview-box" id="compressedPreviewBox" style="display: none;">
+                    <h3>压缩预览</h3>
+                    <div class="preview-image-container">
+                        <img id="compressedPreview" alt="压缩后预览">
+                    </div>
+                    <div class="file-info">
+                        <p>预计大小：<span id="compressedSize"></span></p>
+                        <p>图片质量：<span id="compressionRatio"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 使用本地文件 -->
+    <script>
+    // browser-image-compression 库的核心代码
+    const imageCompression = (function() {
+        return async function compress(file, options = {}) {
+            console.log('压缩函数被调用:', file, options);
+            
+            if (!file || !file.type.startsWith('image/')) {
+                throw new Error('Invalid file type');
+            }
+
+            const maxWidthOrHeight = options.maxWidthOrHeight || 1920;
+            const quality = options.initialQuality || 0.7;
+
+            // 创建 canvas 和 image 对象
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = await new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = URL.createObjectURL(file);
+            });
+
+            // 计算新的尺寸
+            let width = img.width;
+            let height = img.height;
+            
+            if (width > maxWidthOrHeight || height > maxWidthOrHeight) {
+                const ratio = Math.min(maxWidthOrHeight / width, maxWidthOrHeight / height);
+                width = Math.floor(width * ratio);
+                height = Math.floor(height * ratio);
+            }
+
+            // 设置 canvas 尺寸并绘制图片
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // 转换为 blob
+            const blob = await new Promise(resolve => {
+                canvas.toBlob(resolve, 'image/jpeg', quality);
+            });
+
+            // 清理
+            URL.revokeObjectURL(img.src);
+
+            // 创建新的 File 对象
+            return new File([blob], file.name, {
+                type: 'image/jpeg',
+                lastModified: Date.now()
+            });
+        };
+    })();
+
+    // 确保库加载完成
+    window.addEventListener('load', function() {
+        if (typeof imageCompression === 'undefined') {
+            console.error('压缩库加载失败');
+            alert('页面加载异常，请刷新重试');
+        } else {
+            console.log('压缩库加载成功');
+        }
+    });
+    </script>
+    <script src="script.js"></script>
+</body>
+</html> 
